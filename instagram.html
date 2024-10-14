@@ -38,6 +38,14 @@
             color: #666;
             margin: 5px 0;
         }
+        #search-bar {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -50,6 +58,7 @@
 </div>
 
 <div id="person-feed" style="display:none;">
+  <input type="text" id="search-bar" placeholder="Search by name, description, or location..." />
   <div class="container">
     <!-- Cards will be injected here -->
   </div>
@@ -149,15 +158,22 @@
     }
   ];
 
-  // Function to display the data as a grid
-  function displayData() {
+  // Function to display the data as a grid, with optional filtering
+  function displayData(filter = '') {
     const container = document.querySelector('.container');
     
     // Clear any existing content
     container.innerHTML = '';
 
-    // Loop over the data and create grid items
-    personData.forEach(person => {
+    // Filter the person data based on the search query
+    const filteredData = personData.filter(person => 
+      person.name.toLowerCase().includes(filter.toLowerCase()) ||
+      person.description.toLowerCase().includes(filter.toLowerCase()) ||
+      person.location.toLowerCase().includes(filter.toLowerCase())
+    );
+
+    // Loop over the filtered data and create grid items
+    filteredData.forEach(person => {
       const card = document.createElement('div');
       card.classList.add('card');
       
@@ -171,6 +187,13 @@
       container.appendChild(card);
     });
   }
+
+  // Listen for input changes in the search bar and filter the data
+  document.getElementById('search-bar').addEventListener('input', (event) => {
+    const searchQuery = event.target.value;
+    displayData(searchQuery);
+  });
+
 </script>
 
 </body>

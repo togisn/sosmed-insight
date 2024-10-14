@@ -15,6 +15,7 @@
         }
         .container {
             margin: 20px 0;
+            display: none; /* Hide the grid container by default */
         }
         .grid-item {
             width: 100px;
@@ -29,6 +30,9 @@
         .filter-btns button {
             margin: 5px;
         }
+        .search-container {
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -40,8 +44,14 @@
         <p id="user-info" style="display: none;">Logged in as: <span id="username"></span></p>
     </div>
 
-    <div class="container">
+    <div class="container" id="grid-section">
         <h2>Isotope.js Grid</h2>
+
+        <!-- Search input -->
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Search items...">
+        </div>
+
         <div class="filter-btns">
             <button data-filter="*">Show All</button>
             <button data-filter=".category1">Category 1</button>
@@ -56,8 +66,8 @@
     <script>
         // Initialize Auth0 client
         const auth0Client = new auth0.WebAuth({
-            domain: 'dev-g026xt2sb8rgpuoo.us.auth0.com',
-            clientID: 'zebO2RqotUxq0NZ6E1n9EV6ak4QoiD7F',
+            domain: 'YOUR_AUTH0_DOMAIN',
+            clientID: 'YOUR_AUTH0_CLIENT_ID',
             redirectUri: window.location.href,
             responseType: 'token id_token',
             scope: 'openid profile email'
@@ -67,18 +77,77 @@
         const logoutButton = document.getElementById('logout-btn');
         const userInfo = document.getElementById('user-info');
         const usernameSpan = document.getElementById('username');
+        const gridSection = document.getElementById('grid-section');
+        const searchInput = document.getElementById('search-input');
+        let iso;
+
+        // Display user info and show the grid section
+        const displayUser = (user) => {
+            usernameSpan.textContent = user.nickname;
+            loginButton.style.display = 'none';
+            logoutButton.style.display = 'block';
+            userInfo.style.display = 'block';
+            gridSection.style.display = 'block'; // Show the grid section after login
+        };
+
+        // Clear tokens and remove hash from URL
+        const clearAuthTokens = () => {
+            history.replaceState(null, null, window.location.pathname);
+        };
+
+        // Function to load grid data from JSON
+        const loadGridData = () => 
+            fetch('data.json')
+                .then((response) => response.json())
+                .then((data) => {
+                    const gridContainer = document.getElementById('grid-container');
+                    gridContainer.innerHTML = ''; // Clear existing content
+
+                    // Inject new content based on JSON data
+                    data.forEach((item) => {
+                        const div = document.createElement('div');
+                        div.classList.add('grid-item', item.category);
+                        div.textContent = item.content;
+                        gridContainer.appendChild(div);
+                    });
+
+                    // Initialize Isotope.js after items are injected
+                    iso = new Isotope(gridContainer, {
+                        itemSelector: '.grid-item',
+                        layoutMode: 'fitRows'
+                    });
+
+                    // Filter items on button click
+                    const filterButtons = document.querySelectorAll('.filter-btns button');
+                    filterButtons.forEach((button) => 
+                        button.addEventListener('click', () => {
+                            const filterValue = button.getAttribute('data-filter');
+                            iso.arrange({ filter: filterValue });
+                        })
+                    );
+
+                    // Search functionality
+                    searchInput.addEventListener('keyup', () => {
+                        const filterValue = searchInput.value.toLowerCase();
+                        iso.arrange({
+                            filter: function(itemElem) {
+                                const itemText = itemElem.textContent.toLowerCase();
+                                return itemText.includes(filterValue);
+                            }
+                        });
+                    });
+                })
+                .catch((error) => console.error('Error loading JSON data:', error));
 
         // Check if there's an active session on page load
-        window.onload = () => {
+        const checkSession = () => {
             const token = localStorage.getItem('access_token');
             const user = JSON.parse(localStorage.getItem('user'));
 
             if (token && user) {
                 displayUser(user);
+                loadGridData(); // Load data when user is authenticated
             }
-
-            // Load and display JSON data after checking session
-            loadGridData();
         };
 
         // Login function
@@ -86,7 +155,7 @@
             auth0Client.authorize();
         });
 
-        // Parse the hash after redirect
+        // Parse the hash after redirect and remove it from URL
         const parseHash = () => {
             auth0Client.parseHash((err, authResult) => {
                 if (authResult && authResult.accessToken && authResult.idToken) {
@@ -94,21 +163,17 @@
                     localStorage.setItem('id_token', authResult.idToken);
 
                     auth0Client.client.userInfo(authResult.accessToken, (err, user) => {
+                        if (err) return console.error(err);
+
                         localStorage.setItem('user', JSON.stringify(user));
                         displayUser(user);
+                        loadGridData(); // Load data after login
+                        clearAuthTokens(); // Clear tokens from URL
                     });
                 } else if (err) {
                     console.error('Error parsing hash:', err);
                 }
             });
-        };
-
-        // Display user info
-        const displayUser = (user) => {
-            usernameSpan.textContent = user.nickname;
-            loginButton.style.display = 'none';
-            logoutButton.style.display = 'block';
-            userInfo.style.display = 'block';
         };
 
         // Logout function
@@ -119,46 +184,13 @@
             loginButton.style.display = 'block';
             logoutButton.style.display = 'none';
             userInfo.style.display = 'none';
+            gridSection.style.display = 'none'; // Hide the grid section on logout
         });
 
-        parseHash();
-
-        // Function to load grid data from JSON
-        const loadGridData = async () => {
-            try {
-                const response = await fetch('data.json');
-                const data = await response.json();
-                const gridContainer = document.getElementById('grid-container');
-
-                // Clear existing content
-                gridContainer.innerHTML = '';
-
-                // Inject new content based on JSON data
-                data.forEach(item => {
-                    const div = document.createElement('div');
-                    div.classList.add('grid-item', item.category);
-                    div.textContent = item.content;
-                    gridContainer.appendChild(div);
-                });
-
-                // Initialize Isotope.js after items are injected
-                var iso = new Isotope(gridContainer, {
-                    itemSelector: '.grid-item',
-                    layoutMode: 'fitRows'
-                });
-
-                // Filter items on button click
-                var filterButtons = document.querySelectorAll('.filter-btns button');
-                filterButtons.forEach(button => {
-                    button.addEventListener('click', function() {
-                        var filterValue = this.getAttribute('data-filter');
-                        iso.arrange({ filter: filterValue });
-                    });
-                });
-
-            } catch (error) {
-                console.error('Error loading JSON data:', error);
-            }
+        // Initialize on page load
+        window.onload = () => {
+            checkSession();
+            parseHash(); // Parse hash after page load
         };
     </script>
 </body>

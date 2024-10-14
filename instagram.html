@@ -74,15 +74,24 @@
   function handleAuthentication() {
     auth0Client.parseHash((err, authResult) => {
       if (authResult && authResult.accessToken && authResult.idToken) {
-        // Successful login, show feed
-        document.getElementById('login-form').style.display = 'none';
-        document.getElementById('person-feed').style.display = 'block';
-        document.getElementById('logout-btn').style.display = 'block';
-        displayData();  // Function to display the grid feed
+        // Successful login, store tokens in local storage
+        localStorage.setItem('accessToken', authResult.accessToken);
+        localStorage.setItem('idToken', authResult.idToken);
+
+        // Show feed
+        showFeed();
       } else if (err) {
         console.error('Authentication failed: ', err);
       }
     });
+  }
+
+  // Show feed function
+  function showFeed() {
+    document.getElementById('login-form').style.display = 'none';
+    document.getElementById('person-feed').style.display = 'block';
+    document.getElementById('logout-btn').style.display = 'block';
+    displayData();  // Function to display the grid feed
   }
 
   // Login function
@@ -92,6 +101,8 @@
 
   // Logout function
   function logout() {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('idToken');
     auth0Client.logout({
       returnTo: window.location.href
     });
@@ -105,6 +116,15 @@
   window.onload = async function() {
     await initializeAuth0();
     handleAuthentication();
+
+    // Check for existing tokens
+    const accessToken = localStorage.getItem('accessToken');
+    const idToken = localStorage.getItem('idToken');
+
+    // If tokens exist, show the feed
+    if (accessToken && idToken) {
+      showFeed();
+    }
   };
 
   // Sample JSON data

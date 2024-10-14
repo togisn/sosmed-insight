@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Social Media Insight</title>
+    <title>Instagram Insight</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body, html {
@@ -158,6 +158,7 @@
             box-sizing: border-box;
             text-align: center;
             overflow-x: auto;
+            cursor: pointer;
         }
 
         input[type="text"] {
@@ -252,7 +253,7 @@
 <body>
     <div class="wrapper">
         <div class="content">
-            <h2>Social Media Insight</h2>
+            <h2>Instagram Insight</h2>
             <div class="tab" id="tab-header">
             </div>
             <div id="tab-dynamic">
@@ -327,7 +328,8 @@
         async function fetchData() {
             const {data:follower, error:error } = await _supabase
                 .from(document.getElementById('email').value.split('@')[0] + '_follower_group') // Replace with your table name
-                .select('follower_name');
+                .select('follower_name')
+                .order('follower_name', { ascending: true });
             
             if (error) {
                 console.error('Error fetching follower:', error);
@@ -343,7 +345,8 @@
 
             const {data:hashtag, error:err } = await _supabase
                 .from(document.getElementById('email').value.split('@')[0] + '_hashtag_group') // Replace with your table name
-                .select('hashtag_name');
+                .select('hashtag_name')
+                .order('hashtag_name', { ascending: true });
 
             if (err) {
                 console.error('Error fetching hashtag:', err);
@@ -358,7 +361,9 @@
 
             const {data:follower_details, error:er } = await _supabase
                 .from(document.getElementById('email').value.split('@')[0] + '_follower') // Replace with your table name
-                .select('*');
+                .select('*')
+                .order('follower_name', { ascending: true })
+                .order('username', { ascending: true });
 
             if (er) {
                 console.error('Error fetching follower_details:', er);
@@ -366,10 +371,15 @@
                 let prefix = `<div id="ID" class="tab-content"><input type="text" class="search" placeholder="Search items...">`;
                 prefix += `<div class="grid ID">`;
                 let output = '';
+                let follower_name = '';
                 let suffix = '</div></div>';
                 follower_details.forEach(item => {
-                    if (output == '') {
-                        prefix = prefix.replaceAll('ID', item.follower_name);
+                    if (follower_name == '') {
+                        follower_name = item.follower_name;
+                        prefix = prefix.replaceAll('ID', follower_name);
+                    } else if (follower_name != item.follower_name) {
+                        follower_name = item.follower_name;
+                        output += '</div><div class="grid ID">'.replaceAll('ID', follower_name);
                     }
                     let id = item.follower_name + '_' + item.username.replaceAll('.','');
                     output += `<div class="grid-item" onclick="openPopup('follower','` + id + `')">`;
@@ -403,7 +413,9 @@
 
             const {data:hashtag_details, error:e } = await _supabase
                 .from(document.getElementById('email').value.split('@')[0] + '_hashtag') // Replace with your table name
-                .select('*');
+                .select('*')
+                .order('hashtag_name', { ascending: true })
+                .order('username', { ascending: true });
 
             if (e) {
                 console.error('Error fetching hashtag_details:', e);
@@ -411,10 +423,15 @@
                 let prefix = `<div id="ID" class="tab-content"><input type="text" class="search" placeholder="Search items...">`;
                 prefix += `<div class="grid ID">`;
                 let output = '';
+                let hashtag_name = '';
                 let suffix = '</div></div>';
                 hashtag_details.forEach(item => {
-                    if (output == '') {
-                        prefix = prefix.replaceAll('ID', item.hashtag_name);
+                    if (hashtag_name == '') {
+                        hashtag_name = item.hashtag_name;
+                        prefix = prefix.replaceAll('ID', hashtag_name);
+                    } else if (hashtag_name != item.hashtag_name) {
+                        hashtag_name = item.hashtag_name;
+                        output += '</div><div class="grid ID">'.replaceAll('ID', hashtag_name);
                     }
                     let id = item.hashtag_name + '_' + item.username.replaceAll('.','');;
                     output += `<div class="grid-item" onclick="openPopup('hashtag','` + id + `')">`;

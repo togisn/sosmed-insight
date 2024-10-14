@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram-like Feed</title>
+    <script src="https://cdn.auth0.com/js/auth0/9.18/auth0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .card img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        .card h3 {
+            margin: 10px 0;
+            font-size: 18px;
+            color: #333;
+        }
+        .card p {
+            color: #666;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Person Data - Instagram Feed</h1>
+
+<div id="login-form">
+  <h2>Login to Access the Feed</h2>
+  <button id="login-btn">Login</button>
+</div>
+
+<div id="person-feed" style="display:none;">
+  <div class="container">
+    <!-- Cards will be injected here -->
+  </div>
+  <button id="logout-btn" style="display:none;">Logout</button>
+</div>
+
+<script>
+  let auth0Client = null;
+
+  // Initialize Auth0 client function
+  async function initializeAuth0() {
+    auth0Client = await new auth0.WebAuth({
+      domain: 'dev-g026xt2sb8rgpuoo.us.auth0.com',
+      clientID: 'zebO2RqotUxq0NZ6E1n9EV6ak4QoiD7F',
+      redirectUri: window.location.href,
+      responseType: 'token id_token',
+      scope: 'openid profile'
+    });
+  }
+
+  // Function to handle authentication
+  function handleAuthentication() {
+    auth0Client.parseHash((err, authResult) => {
+      if (authResult && authResult.accessToken && authResult.idToken) {
+        // Successful login, show feed
+        document.getElementById('login-form').style.display = 'none';
+        document.getElementById('person-feed').style.display = 'block';
+        document.getElementById('logout-btn').style.display = 'block';
+        displayData();  // Function to display the grid feed
+      } else if (err) {
+        console.error('Authentication failed: ', err);
+      }
+    });
+  }
+
+  // Login function
+  function login() {
+    auth0Client.authorize();
+  }
+
+  // Logout function
+  function logout() {
+    auth0Client.logout({
+      returnTo: window.location.href
+    });
+  }
+
+  // Event listeners for login and logout buttons
+  document.getElementById('login-btn').addEventListener('click', login);
+  document.getElementById('logout-btn').addEventListener('click', logout);
+
+  // Initialize and handle authentication on page load
+  window.onload = async function() {
+    await initializeAuth0();
+    handleAuthentication();
+  };
+
+  // Sample JSON data
+  const personData = [
+    {
+      "name": "John Doe",
+      "image": "https://via.placeholder.com/150",
+      "description": "Web Developer",
+      "location": "New York, USA"
+    },
+    {
+      "name": "Jane Smith",
+      "image": "https://via.placeholder.com/150",
+      "description": "Graphic Designer",
+      "location": "London, UK"
+    },
+    {
+      "name": "Alice Johnson",
+      "image": "https://via.placeholder.com/150",
+      "description": "Photographer",
+      "location": "Paris, France"
+    }
+  ];
+
+  // Function to display the data as a grid
+  function displayData() {
+    const container = document.querySelector('.container');
+    
+    // Clear any existing content
+    container.innerHTML = '';
+
+    // Loop over the data and create grid items
+    personData.forEach(person => {
+      const card = document.createElement('div');
+      card.classList.add('card');
+      
+      card.innerHTML = `
+        <img src="${person.image}" alt="${person.name}">
+        <h3>${person.name}</h3>
+        <p>${person.description}</p>
+        <p><small>${person.location}</small></p>
+      `;
+      
+      container.appendChild(card);
+    });
+  }
+</script>
+
+</body>
+</html>
